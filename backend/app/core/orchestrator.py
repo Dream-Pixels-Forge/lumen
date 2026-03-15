@@ -1,9 +1,12 @@
 from perception.capture import ScreenCaptureService
 from perception.som.annotator import SoMAnnotator
+from perception.redaction.redactor import PIIRedactor
 from reasoning.llm.client import GeminiVisionClient
 from reasoning.planner.core import VisualPlanner
 from execution.web.driver import PlaywrightDriver
 from execution.web.controller import ExecutionController
+import asyncio
+import os
 
 
 class LumenOrchestrator:
@@ -11,6 +14,7 @@ class LumenOrchestrator:
         self.max_steps = max_steps
         self.capture_service = ScreenCaptureService()
         self.annotator = SoMAnnotator()
+        self.redactor = PIIRedactor()
 
         # In a real setup, these would be injected or properly initialized
         self.llm_client = GeminiVisionClient()
@@ -33,14 +37,20 @@ class LumenOrchestrator:
             screenshot_path, element_map = await self.capture_service.capture_page(
                 await (await driver.get_page()).url(), filename=f"step_{steps}.png"
             )
+
+            # 1b. REDACT PII
+            redacted_path, element_map = self.redactor.redact(
+                screenshot_path, element_map, output_filename=f"step_{steps}_redacted.png"
+            )
+
+            # 1c. ANNOTATE SoM (on the redacted image)
             annotated_path = self.annotator.annotate(
-                screenshot_path, element_map, output_filename=f"step_{steps}_som.png"
+                redacted_path, element_map, output_filename=f"step_{steps}_som.png"
             )
 
             # PHASE 2: THINK
             plan = await self.planner.plan_next_step(goal, annotated_path, element_map)
-            print(f"Thought: {plan.get('thought')}")
-            print(f"Action: {plan.get('action')} on {plan.get('target_id')}")
+
 
             history.append(
                 {
