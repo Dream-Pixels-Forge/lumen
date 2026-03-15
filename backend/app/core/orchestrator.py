@@ -1,6 +1,8 @@
 from perception.capture import ScreenCaptureService
 from perception.som.annotator import SoMAnnotator
 from perception.redaction.redactor import PIIRedactor
+from perception.ocr.ocr_processor import OCRProcessor
+from perception.ocr.icon_recognizer import IconRecognizer
 from reasoning.llm.client import GeminiVisionClient
 from reasoning.planner.core import VisualPlanner
 from execution.web.driver import PlaywrightDriver
@@ -15,6 +17,15 @@ class LumenOrchestrator:
         self.capture_service = ScreenCaptureService()
         self.annotator = SoMAnnotator()
         self.redactor = PIIRedactor()
+        
+        # New Advanced Perception
+        try:
+            self.ocr_processor = OCRProcessor()
+            self.icon_recognizer = IconRecognizer()
+        except Exception as e:
+            print(f"Warning: Advanced Perception (OCR/Icon) not initialized: {e}")
+            self.ocr_processor = None
+            self.icon_recognizer = None
 
         # In a real setup, these would be injected or properly initialized
         self.llm_client = GeminiVisionClient()
@@ -38,18 +49,29 @@ class LumenOrchestrator:
                 await (await driver.get_page()).url(), filename=f"step_{steps}.png"
             )
 
-            # 1b. REDACT PII
+            # 1b. REDACT PII (on interactive elements)
             redacted_path, element_map = self.redactor.redact(
                 screenshot_path, element_map, output_filename=f"step_{steps}_redacted.png"
             )
+            
+            # 1c. ADVANCED PERCEPTION (OCR & Icons)
+            static_text = []
+            icons = []
+            if self.ocr_processor:
+                static_text = self.ocr_processor.process_screenshot(redacted_path)
+            if self.icon_recognizer:
+                icons = self.icon_recognizer.recognize_icons(redacted_path)
+                
+            # Combine all context
+            all_elements = element_map + static_text + icons
 
-            # 1c. ANNOTATE SoM (on the redacted image)
+            # 1d. ANNOTATE SoM (on the redacted image)
             annotated_path = self.annotator.annotate(
                 redacted_path, element_map, output_filename=f"step_{steps}_som.png"
             )
 
             # PHASE 2: THINK
-            plan = await self.planner.plan_next_step(goal, annotated_path, element_map)
+            plan = await self.planner.plan_next_step(goal, annotated_path, all_elements)
 
 
             history.append(
