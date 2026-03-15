@@ -1,13 +1,22 @@
 from reasoning.llm.client import BaseVisionLLM
+from pydantic import BaseModel, Field
+from typing import Optional, Literal
 import json
+
+class ActionSchema(BaseModel):
+    thought: str
+    action: Literal["click", "type", "scroll", "wait", "done"]
+    target_id: Optional[int] = None
+    payload: Optional[str] = None
 
 class VisualPlanner:
     def __init__(self, llm: BaseVisionLLM):
         self.llm = llm
 
     def _build_prompt(self, goal: str, elements: list) -> str:
+
         element_description = json.dumps(elements, indent=2)
-        
+
         prompt = f"""
 You are the Reasoning Brain of Lumen, a visual agent.
 Your goal is: {goal}
@@ -33,4 +42,7 @@ If you need to wait for a page load or animation, use action "wait".
     async def plan_next_step(self, goal: str, image_path: str, elements: list) -> dict:
         prompt = self._build_prompt(goal, elements)
         result = await self.llm.think(prompt, image_path)
-        return result
+        
+        # Validate result with schema
+        validated_action = ActionSchema(**result)
+        return validated_action.model_dump()

@@ -2,6 +2,7 @@ import asyncio
 from playwright.async_api import async_playwright
 import os
 
+
 class ScreenCaptureService:
     def __init__(self, output_dir="screenshots"):
         self.output_dir = output_dir
@@ -13,22 +14,23 @@ class ScreenCaptureService:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
             await page.goto(url)
-            
+
             # Wait for the page to settle
             await page.wait_for_timeout(2000)
-            
+
             # Extract elements via grounding.js
             with open("perception/som/grounding.js", "r") as f:
                 grounding_script = f.read()
-            
+
             element_map = await page.evaluate(grounding_script)
-            
+
             # Take screenshot
             filepath = os.path.join(self.output_dir, filename)
             await page.screenshot(path=filepath)
-            
+
             await browser.close()
             return filepath, element_map
+
 
 if __name__ == "__main__":
     service = ScreenCaptureService()

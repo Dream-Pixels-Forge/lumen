@@ -1,1 +1,1 @@
-from .orchestrator import LumenOrchestrator
+from .orchestrator import LumenOrchestrator as LumenOrchestrator

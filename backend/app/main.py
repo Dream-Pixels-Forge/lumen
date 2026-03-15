@@ -5,7 +5,7 @@ from backend.app.api import perception, reasoning, execution, agent
 app = FastAPI(
     title="Lumen UI Navigator",
     description="A Large Action Model (LAM) framework for visual automation.",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 app.add_middleware(
@@ -21,9 +21,11 @@ app.include_router(reasoning.router, prefix="/api/v1", tags=["Reasoning"])
 app.include_router(execution.router, prefix="/api/v1", tags=["Execution"])
 app.include_router(agent.router, prefix="/api/v1", tags=["Agent"])
 
+
 @app.get("/")
 async def root():
     return {"message": "Lumen UI Navigator is active", "status": "online"}
+
 
 @app.get("/health")
 async def health_check():

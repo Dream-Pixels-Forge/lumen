@@ -5,9 +5,11 @@ from backend.app.core.orchestrator import LumenOrchestrator
 router = APIRouter()
 orchestrator = LumenOrchestrator()
 
+
 class RunRequest(BaseModel):
     goal: str
     url: str
+
 
 @router.post("/run")
 async def run_task(request: RunRequest):

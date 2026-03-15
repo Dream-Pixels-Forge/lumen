@@ -1,5 +1,5 @@
 from playwright.async_api import async_playwright
-import asyncio
+
 
 class PlaywrightDriver:
     _instance = None
@@ -15,6 +15,11 @@ class PlaywrightDriver:
         if cls._instance is None:
             cls._instance = PlaywrightDriver()
             await cls._instance._start()
+        
+        # Check if browser is still alive
+        if not cls._instance.browser.is_connected():
+            await cls._instance._start()
+            
         return cls._instance
 
     async def _start(self):

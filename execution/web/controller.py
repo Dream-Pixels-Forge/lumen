@@ -1,5 +1,5 @@
 from execution.web.driver import PlaywrightDriver
-import asyncio
+
 
 class ExecutionController:
     def __init__(self, driver: PlaywrightDriver):
@@ -9,12 +9,12 @@ class ExecutionController:
         action = action_json.get("action")
         target_id = action_json.get("target_id")
         payload = action_json.get("payload")
-        
+
         page = await self.driver.get_page()
 
         if action == "done":
             return {"status": "completed", "message": "Goal achieved."}
-        
+
         if action == "wait":
             await page.wait_for_timeout(2000)
             return {"status": "waiting", "message": "Wait action completed."}
@@ -25,7 +25,7 @@ class ExecutionController:
             if action in ["click", "type"]:
                 raise ValueError(f"Target ID {target_id} not found in element map.")
             # For actions that don't need a target, we skip this check
-        
+
         x, y = target_element["x"], target_element["y"] if target_element else (0, 0)
 
         if action == "click":
@@ -46,10 +46,10 @@ class ExecutionController:
 
         # Wait for page stabilization after action
         await page.wait_for_timeout(2000)
-        
+
         return {
-            "status": "success", 
+            "status": "success",
             "action_executed": action,
             "target_id": target_id,
-            "new_url": page.url
+            "new_url": page.url,
         }
