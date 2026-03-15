@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.app.api import perception
 
 app = FastAPI(
     title="Lumen UI Navigator",
@@ -14,6 +15,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(perception.router, prefix="/api/v1", tags=["Perception"])
 
 @app.get("/")
 async def root():
